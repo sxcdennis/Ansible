@@ -69,3 +69,6 @@ Here is a second example using the random private key that Vagrant automatically
 $ ansible-playbook --private-key=.vagrant/machines/default/virtualbox/private_key -u vagrant -i .vagrant/provisioners/ansible/inventory/vagrant_ansible_inventory playbook.yml
 
 ```
+
+
+[< Back: Basic YMAL Syntax](https://github.com/sxcdennis/Ansible/blob/master/ymal.md) || [Next: Creating inventory files >](https://github.com/sxcdennis/Ansible/blob/master/inventory.md)
