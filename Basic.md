@@ -37,9 +37,11 @@ ansible <inventory> <options>
 **Common Options**
 
 ```
+
 ansible web -a /bin/date
 ansbile web -m ping
 ansible web -m yum -a "name=openssl state=latest"
+asnbile web -m git -a "htpps://example.example.git"
 
 ```
 
