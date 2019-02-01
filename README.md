@@ -1,6 +1,6 @@
 # Ansible
 
-Ansible is a configuration management tool used to automate installations and configurations. This is a small documentation of what Ansible is in my definition and some of the problems I try to solve with it. For most of the examples I'll be using **Vagrant** as a tool for managing my Virtual Machines.
+Ansible is known as a configuration management tool used to automate installations and configurations. This is a small documentation of what Ansible is in my definition and some of the problems I try to solve with it. For most of the examples I'll be using **Vagrant** as a tool for managing my Virtual Machines.
 
 # Table of Contents
 
