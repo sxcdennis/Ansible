@@ -14,6 +14,6 @@ Ansible is known as a configuration management tool used to automate installatio
 
 - [Creating playbooks](https://github.com/sxcdennis/Ansible/blob/master/playbooks.md)
 
-- [Roles (Reusable Playbooks)](https://github.com/sxcdennis/Ansible/blob/master/roles.md)
+- [Reusable Playbooks: Includes, Imports, and Roles](https://github.com/sxcdennis/Ansible/blob/master/roles.md)
 
 - [Examples of solving issues](https://github.com/sxcdennis/Ansible/blob/master/issues.md)
