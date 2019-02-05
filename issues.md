@@ -89,7 +89,7 @@ EOL
 
 ### Log into  mgmt
 
-vagrant ssh mgmt
+`vagrant ssh mgmt`
 
 ### Edit Hosts file
 
@@ -412,21 +412,308 @@ http://localhost:8080/haproxy?stats
 
 # Create roles
 
+## Basic Overview
 
 
+As stated before in the [roles](https://github.com/sxcdennis/Ansible/blob/master/roles.md) section, roles are a great way to organize your entire configuration. To create a role, you start by initializing into a directory. Followed by editing yml files and templates. Then run a yml file that calls the specific role. In this example, we'll take our previous example and turn it into a role.
+
+To start we'll go over two commands:
+
+- **ansible-galaxy init --offline**: Initiates files for ansible roles.
+
+- **tree** Shows tree of ansible role directory.
+
+Once you've initialized the environment, it'll create files and directories:
+
+- `tasks` - contains the main list of tasks to be executed by the role.
+
+- `handlers` - contains handlers, which may be used by this role or even anywhere outside this role.
+
+- `defaults` - default variables for the role
+
+- `vars` - other variables for the role
+
+- `files` - contains files which can be deployed via this role.
+templates - contains templates which can be deployed via this role.
+
+- `meta` - defines some meta data for this role. See below for more details
 
 
+## Creating the role
+
+**1.** We'll start by using **ansible-galaxy init --offline**
+and we'll make **3** roles: all, web, lb
+
+```
+
+mkdir -p /home/vagrant/roles/
+ansible-galaxy init --offline /home/vagrant/roles/all
+ansible-galaxy init --offline /home/vagrant/roles/web  
+ansible-galaxy init --offline /home/vagrant/roles/lb
 
 
+```
+
+**2.** Use tree command to see successful files.
+
+```
+
+tree /home/vagrant/roles/all
+tree /home/vagrant/roles/web
+tree /home/vagrant/roles/lb
+
+```
+
+![ans5](https://github.com/sxcdennis/Ansible/blob/master/images/ans5.png?raw=true)
 
 
+**3.** Convert **example1.yml** to split into each yml file on the roles of each tasks. We'll start with tasks for **all** .
 
 
+**/home/vagrant/roles/all/tasks/main.yml**
+
+```
 
 
+---
+# All
+  - name: install git
+    apt:
+      name: git
+      state: installed
+
+```
+
+**4a.**  We'll move to tasks for **web**
+
+**/home/vagrant/roles/web/tasks/main.yml**
+
+```
+
+---
+#TASKS
+  - name: install nginx
+    apt:
+      name: nginx
+      state: installed
+
+  - name: configure our nginx.conf
+    template: src=templates/nginx.conf.j2 dest=/etc/nginx/nginx.conf
+    notify: restart nginx   
+
+  - name: configure our /etc/nginx/site-available/default
+    template: src=templates/nginx.default.j2 dest=/etc/nginx/sites-available/default
+    notify: restart nginx
+
+  - name: configure index.html for nginx
+    template: src=templates/nginx.index.html.j2 dest=/usr/share/nginx/html/index.html
+
+```
+
+**4b.**  For **web** since we have a larger yml file we can actually split it up into different yml files and then import it.
 
 
+**/home/vagrant/roles/web/tasks/main.yml**
 
+```
+---
+# tasks for web
+
+- import_tasks: /home/vagrant/roles/web/tasks/install.yml
+- import_tasks: /home/vagrant/roles/web/tasks/configure.yml
+
+
+```
+
+
+**/home/vagrant/roles/web/tasks/install.yml**
+
+
+```
+
+# install nginx
+---
+- name: install nginx
+  apt:
+    name: nginx
+    state: installed
+
+
+```
+
+**/home/vagrant/roles/web/tasks/configure.yml**
+
+
+```
+
+#configure web
+---
+- name: configure our nginx.conf
+  template: src=/home/vagrant/roles/web/templates/nginx.conf.j2 dest=/etc/nginx/nginx.conf
+  notify: restart nginx
+
+- name: configure our /etc/nginx/site-available/default
+  template: src=/home/vagrant/roles/web/templates/nginx.default.j2 dest=/etc/nginx/sites-available/default
+  notify: restart nginx
+
+- name: configure index.html for nginx
+  template: src=/home/vagrant/roles/web/templates/nginx.index.html.j2 dest=/usr/share/nginx/html/index.html
+
+```
+
+copy templates over
+
+
+```
+
+cp /home/vagrant/templates* /home/vagrant/roles/web/templates
+
+```
+
+**5a.** Change main.yml for tasks
+
+**/home/vagrant/roles/lb/tasks/main.yml**
+
+
+```
+
+---
+- name: install haproxy and socat
+  apt:  name={{item}} state=installed
+  with_items:
+    - haproxy
+    - socat
+
+- name: enable haproxy
+  lineinfile: dest=/etc/default/haproxy regexp="^ENABLED" line="ENABLED=1"
+  notify: restart haproxy
+
+- name: deploy haproxy config
+  template: src=/home/vagrant/roles/lb/templates/haproxy.cfg.j2 dest=/etc/haproxy/haproxy.cfg
+  notify: restart haproxy
+
+```
+
+
+**5b.** Copy template over
+
+
+```
+
+cp template/haproxy.cfg.j2 /home/vagrant/roles/lb/templates/
+
+```
+
+
+**6.** Now we'll move onto handlers. We'll start with web handlers.
+
+**/home/vagrant/roles/web/handlers/main.yml**
+
+```
+# web handlers
+---
+  - name: restart nginx
+    service:
+      name: nginx
+      state: restarted
+```
+
+**7.** Then move onto handlers for lb
+
+```
+# lb handlers
+---
+  - name: restart haproxy
+    service:
+      name: haproxy
+      state: restarted
+
+```
+
+**8.** Now we'll create run.yml for each one, starting with all.
+
+**runall.yml**
+
+```
+---
+
+- hosts: all
+  roles:
+  - all
+
+```
+
+**runweb.yml**
+
+
+```
+---
+
+- hosts: web
+  roles:
+  - web
+
+```
+
+**runlb.yml**
+
+
+```
+---
+
+- hosts: lb
+  roles:
+  - lb
+
+```
+
+**9.** We can create one file for all of these instead.
+
+ **runeverything.yml**
+
+ ```
+
+ ---
+
+- hosts: all
+  roles:
+  - all
+
+- hosts: web
+  roles:
+  - web
+
+- hosts: lb
+  roles:
+  - lb
+
+```
+
+**10.** Now we can run the file
+
+
+```
+
+ansible-playbook runeverything.yml
+
+```
+
+
+![ans7](https://github.com/sxcdennis/Ansible/blob/master/images/ans7.png?raw=true)
+
+Hooray! It works!
+
+We can even check the website and haproxy locally.
+
+![ans8](https://github.com/sxcdennis/Ansible/blob/master/images/ans8.png?raw=true)
+
+
+![ans9](https://github.com/sxcdennis/Ansible/blob/master/images/ans9.png?raw=true)
+
+
+## Summary
+
+As you can see Ansible can be quite useful. This is just the tip of it. As roles and templating can get quite complex in bigger environments.
 
 
 [< Back: Reusable Playbooks: Includes, Imports, and Roles](https://github.com/sxcdennis/Ansible/blob/master/roles.md)
